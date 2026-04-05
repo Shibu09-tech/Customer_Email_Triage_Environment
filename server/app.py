@@ -103,6 +103,6 @@ async def health() -> Dict[str, str]:
     """Health check endpoint."""
     return {"status": "ok", "env": "customer-email-triage", "version": "1.0.0"}
 
-def run():
+def main():
     import uvicorn
-    uvicorn.run("server.main:app", host="0.0.0.0", port=8000)
+    uvicorn.run("server.app:app", host="0.0.0.0", port=8000)
