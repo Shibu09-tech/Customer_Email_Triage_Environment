@@ -221,7 +221,7 @@ export API_BASE_URL="https://router.huggingface.co/v1"
 export MODEL_NAME="Qwen/Qwen2.5-72B-Instruct"
 
 # Make sure the server is running first:
-uvicorn server.main:app --host 0.0.0.0 --port 8000
+uvicorn server.app:app --host 0.0.0.0 --port 8000
 
 # Run inference in another terminal:
 python inference.py</code></pre>
@@ -290,7 +290,7 @@ python inference.py</code></pre>
 
             <h3>📦 Setup</h3>
             <pre><code>pip install -r requirements.txt
-uvicorn server.main:app --host 0.0.0.0 --port 8000</code></pre>
+uvicorn server.app:app --host 0.0.0.0 --port 8000</code></pre>
 
             <h3>🐳 Docker</h3>
             <pre><code>docker build -t email-triage .
