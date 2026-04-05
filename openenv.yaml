@@ -1,0 +1,82 @@
+name: customer-email-triage
+version: "1.0.0"
+description: >
+  An OpenEnv environment where AI agents learn to triage customer support emails:
+  classify priority levels, route to the correct department, and draft professional replies.
+  Models a real task performed daily by thousands of customer support professionals.
+author: "OpenEnv Hackathon Submission"
+tags:
+  - customer-support
+  - email-triage
+  - nlp
+  - real-world
+  - openenv
+
+tasks:
+  - name: priority-triage
+    difficulty: easy
+    description: "Classify email priority: urgent / high / medium / low / spam"
+    max_steps: 10
+    success_threshold: 0.70
+
+  - name: full-routing
+    difficulty: medium
+    description: "Classify priority AND route email to the correct department"
+    max_steps: 12
+    success_threshold: 0.60
+
+  - name: full-pipeline
+    difficulty: hard
+    description: "Priority + routing + draft a professional customer reply"
+    max_steps: 15
+    success_threshold: 0.50
+
+endpoints:
+  reset:
+    method: POST
+    path: /reset
+    description: "Start a new episode. Body: {task: str, seed?: int}"
+
+  step:
+    method: POST
+    path: /step
+    description: "Submit triage action. Body: {priority, category, reply_draft}"
+
+  state:
+    method: GET
+    path: /state
+    description: "Get current environment state snapshot"
+
+observation_space:
+  type: object
+  fields:
+    - email_id: str
+    - subject: str
+    - body: str
+    - sender: str
+    - sender_tier: "enum[free, pro, enterprise]"
+    - timestamp: str
+    - thread_length: int
+    - previous_interactions: int
+    - task_name: str
+    - step_number: int
+    - emails_remaining: int
+    - episode_reward_so_far: float
+
+action_space:
+  type: object
+  fields:
+    - priority: "enum[urgent, high, medium, low, spam]"
+    - category: "enum[billing, technical, refunds, general, account, compliance, spam]"
+    - reply_draft: "str (max 2000 chars)"
+
+reward:
+  type: float
+  range: [0.0, 1.08]
+  description: >
+    Per-step reward = task_score - 0.02 efficiency penalty.
+    Episode bonus of +0.10 if average step reward >= 0.80.
+    task_score varies by task:
+      priority-triage:  1.0 * priority_score
+      full-routing:     0.5 * priority + 0.5 * category
+      full-pipeline:    0.3 * priority + 0.3 * category + 0.4 * reply_quality

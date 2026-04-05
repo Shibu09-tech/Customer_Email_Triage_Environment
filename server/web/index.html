@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Email Triage — OpenEnv Dashboard</title>
+  <meta name="description" content="Interactive dashboard for the Customer Email Triage OpenEnv environment. Test step(), reset(), and state() endpoints." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- ── Sidebar ──────────────────────────────────────────────────── -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <span class="logo-icon">📧</span>
+        <span class="logo-text">Email Triage<br/><small>OpenEnv</small></span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" data-tab="playground">🕹️ Playground</button>
+        <button class="nav-btn" data-tab="quickstart">⚡ Quick Start</button>
+        <button class="nav-btn" data-tab="readme">📖 README</button>
+      </nav>
+
+      <!-- Task Selector -->
+      <div class="task-panel">
+        <label class="panel-label">Active Task</label>
+        <select id="taskSelect" class="select-input">
+          <option value="priority-triage">🟢 Priority Triage (Easy)</option>
+          <option value="full-routing">🟡 Full Routing (Medium)</option>
+          <option value="full-pipeline">🔴 Full Pipeline (Hard)</option>
+        </select>
+        <div id="taskDescription" class="task-desc"></div>
+      </div>
+
+      <!-- Episode Stats -->
+      <div class="stats-panel">
+        <div class="stat-row">
+          <span class="stat-label">Episode Reward</span>
+          <span class="stat-value" id="statReward">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Step</span>
+          <span class="stat-value" id="statStep">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Emails Left</span>
+          <span class="stat-value" id="statLeft">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Status</span>
+          <span class="stat-value" id="statDone"><span class="badge badge-waiting">Waiting</span></span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── Main ──────────────────────────────────────────────────────── -->
+    <main class="main">
+
+      <!-- Playground Tab -->
+      <div id="tab-playground" class="tab-content active">
+
+        <!-- Email Card -->
+        <section class="email-card card">
+          <div class="card-header">
+            <span class="card-icon">📨</span>
+            <span class="card-title">Current Email</span>
+            <span id="emailMeta" class="email-meta"></span>
+          </div>
+          <div id="emailPlaceholder" class="email-placeholder">
+            <div class="placeholder-icon">📬</div>
+            <p>No email loaded.<br/>Click <strong>Reset</strong> to start an episode.</p>
+          </div>
+          <div id="emailContent" class="email-content hidden">
+            <div class="email-header-row">
+              <div class="email-field">
+                <span class="field-label">From</span>
+                <span id="emailSender" class="field-value"></span>
+              </div>
+              <div class="email-field">
+                <span class="field-label">Tier</span>
+                <span id="emailTier" class="field-value tier-badge"></span>
+              </div>
+              <div class="email-field">
+                <span class="field-label">Thread</span>
+                <span id="emailThread" class="field-value"></span>
+              </div>
+            </div>
+            <div class="email-subject" id="emailSubject"></div>
+            <div class="email-body" id="emailBody"></div>
+          </div>
+        </section>
+
+        <!-- Action Panel -->
+        <section class="action-card card">
+          <div class="card-header">
+            <span class="card-icon">🎯</span>
+            <span class="card-title">Agent Action</span>
+            <div style="display: flex; gap: 8px; font-size: 0.8rem; margin-left: auto;">
+              <span style="background: var(--bg-card); padding: 4px 8px; border-radius: 4px; font-weight: 500;">Reward: <span id="topRewardValue" style="font-family: var(--font-mono); font-weight: 700; color: var(--text-primary);">—</span></span>
+              <span style="background: var(--bg-card); padding: 4px 8px; border-radius: 4px; font-weight: 500;">Done: <span id="topDoneValue" style="font-family: var(--font-mono); font-weight: 700; color: var(--text-primary);">—</span></span>
+            </div>
+          </div>
+          <div class="action-grid">
+            <div class="action-field">
+              <label for="prioritySelect" class="field-label">Priority</label>
+              <select id="prioritySelect" class="select-input">
+                <option value="urgent">🔴 Urgent</option>
+                <option value="high">🟠 High</option>
+                <option value="medium" selected>🟡 Medium</option>
+                <option value="low">🟢 Low</option>
+                <option value="spam">⚫ Spam</option>
+              </select>
+            </div>
+            <div class="action-field">
+              <label for="categorySelect" class="field-label">Category / Route</label>
+              <select id="categorySelect" class="select-input">
+                <option value="billing">💳 Billing</option>
+                <option value="technical" selected>🔧 Technical</option>
+                <option value="refunds">↩️ Refunds</option>
+                <option value="general">💬 General</option>
+                <option value="account">👤 Account</option>
+                <option value="compliance">⚖️ Compliance</option>
+                <option value="spam">🚫 Spam</option>
+              </select>
+            </div>
+          </div>
+          <div class="reply-field">
+            <label for="replyDraft" class="field-label">Reply Draft <small>(required for Hard task)</small></label>
+            <textarea id="replyDraft" class="textarea-input" rows="4"
+              placeholder="Draft your reply to the customer here..."></textarea>
+          </div>
+          <div class="action-buttons">
+            <button id="btnStep" class="btn btn-primary" disabled>
+              <span class="btn-icon">▶</span> Step
+            </button>
+            <button id="btnReset" class="btn btn-secondary">
+              <span class="btn-icon">↺</span> Reset
+            </button>
+            <button id="btnState" class="btn btn-ghost">
+              <span class="btn-icon">📊</span> Get State
+            </button>
+          </div>
+        </section>
+
+        <!-- Response Panel -->
+        <section class="response-card card">
+          <div class="card-header">
+            <span class="card-icon">📡</span>
+            <span class="card-title">Response</span>
+            <div class="reward-bar">
+              <span class="reward-label">Reward:</span>
+              <span id="rewardValue" class="reward-value">—</span>
+              <span class="reward-label">Done:</span>
+              <span id="doneValue" class="done-value">—</span>
+            </div>
+            <button id="btnCopyJson" class="btn-icon-only" title="Copy JSON">⧉</button>
+          </div>
+          <div id="statusMsg" class="status-msg"></div>
+          <div class="json-tabs">
+            <button class="json-tab active" data-panel="raw">Raw JSON</button>
+            <button class="json-tab" data-panel="breakdown">Reward Breakdown</button>
+            <button class="json-tab" data-panel="history">History</button>
+          </div>
+          <div id="panel-raw" class="json-panel active">
+            <pre id="jsonRaw" class="json-pre">// Response will appear here after an action</pre>
+          </div>
+          <div id="panel-breakdown" class="json-panel">
+            <div id="breakdownContent" class="breakdown-content">
+              <p class="muted">Take a step to see the reward breakdown.</p>
+            </div>
+          </div>
+          <div id="panel-history" class="json-panel">
+            <div id="historyContent" class="history-content">
+              <p class="muted">Episode history will appear here.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Quick Start Tab -->
+      <div id="tab-quickstart" class="tab-content">
+        <section class="card">
+          <div class="card-header">
+            <span class="card-icon">⚡</span>
+            <span class="card-title">Quick Start</span>
+          </div>
+          <h3 class="qs-heading">Connect from Python</h3>
+          <p class="qs-text">Install the client and connect to this environment:</p>
+          <div class="code-block">
+            <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+            <pre><code>pip install openenv-core requests</code></pre>
+          </div>
+
+          <h3 class="qs-heading">Using OpenEnv client (via HTTP)</h3>
+          <div class="code-block">
+            <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+            <pre><code>import requests
+
+BASE = "http://localhost:8000"
+
+# Reset the environment (start a new episode)
+resp = requests.post(f"{BASE}/reset", json={"task": "priority-triage"})
+obs = resp.json()["observation"]
+print(obs["subject"])
+
+# Take a step
+action = {"priority": "urgent", "category": "technical", "reply_draft": ""}
+result = requests.post(f"{BASE}/step", json=action).json()
+print(f"Reward: {result['reward']}, Done: {result['done']}")</code></pre>
+          </div>
+
+          <h3 class="qs-heading">Run the inference script</h3>
+          <div class="code-block">
+            <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+            <pre><code>export HF_TOKEN="your-token-here"
+export API_BASE_URL="https://router.huggingface.co/v1"
+export MODEL_NAME="Qwen/Qwen2.5-72B-Instruct"
+
+# Make sure the server is running first:
+uvicorn server.main:app --host 0.0.0.0 --port 8000
+
+# Run inference in another terminal:
+python inference.py</code></pre>
+          </div>
+
+          <h3 class="qs-heading">Available Tasks</h3>
+          <table class="task-table">
+            <thead><tr><th>Task</th><th>Difficulty</th><th>Emails</th><th>Action Fields</th><th>Success Threshold</th></tr></thead>
+            <tbody>
+              <tr><td>priority-triage</td><td><span class="badge badge-easy">Easy</span></td><td>10</td><td>priority</td><td>≥ 0.70</td></tr>
+              <tr><td>full-routing</td><td><span class="badge badge-medium">Medium</span></td><td>12</td><td>priority + category</td><td>≥ 0.60</td></tr>
+              <tr><td>full-pipeline</td><td><span class="badge badge-hard">Hard</span></td><td>15</td><td>priority + category + reply</td><td>≥ 0.50</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <!-- README Tab -->
+      <div id="tab-readme" class="tab-content">
+        <section class="card readme-card">
+          <div class="card-header">
+            <span class="card-icon">📖</span>
+            <span class="card-title">README</span>
+          </div>
+          <div class="readme-body">
+            <h2>Customer Email Triage — OpenEnv</h2>
+            <p>An OpenEnv environment where AI agents learn to triage customer support emails — a real task performed by thousands of support professionals daily.</p>
+
+            <h3>🎯 Motivation</h3>
+            <p>Customer support email triage is a high-value real-world task: companies receive hundreds to thousands of emails daily, requiring fast classification and routing. Misrouting or missed urgency costs time and money. This environment models that challenge faithfully.</p>
+
+            <h3>📊 Observation Space</h3>
+            <table class="readme-table">
+              <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>email_id</td><td>str</td><td>Unique ID for this email</td></tr>
+                <tr><td>subject</td><td>str</td><td>Email subject line</td></tr>
+                <tr><td>body</td><td>str</td><td>Full email body text</td></tr>
+                <tr><td>sender</td><td>str</td><td>Sender email address</td></tr>
+                <tr><td>sender_tier</td><td>str</td><td>free / pro / enterprise</td></tr>
+                <tr><td>thread_length</td><td>int</td><td>Prior emails in this thread</td></tr>
+                <tr><td>previous_interactions</td><td>int</td><td>Prior tickets by this sender</td></tr>
+                <tr><td>emails_remaining</td><td>int</td><td>Queue depth remaining</td></tr>
+                <tr><td>episode_reward_so_far</td><td>float</td><td>Cumulative reward</td></tr>
+              </tbody>
+            </table>
+
+            <h3>🎮 Action Space</h3>
+            <table class="readme-table">
+              <thead><tr><th>Field</th><th>Type</th><th>Values</th></tr></thead>
+              <tbody>
+                <tr><td>priority</td><td>enum</td><td>urgent, high, medium, low, spam</td></tr>
+                <tr><td>category</td><td>enum</td><td>billing, technical, refunds, general, account, compliance, spam</td></tr>
+                <tr><td>reply_draft</td><td>str</td><td>Free-form reply (max 2000 chars)</td></tr>
+              </tbody>
+            </table>
+
+            <h3>🏆 Reward Function</h3>
+            <p>Each step: <code>reward = task_score − 0.02 (efficiency penalty)</code></p>
+            <p>Episode bonus: <code>+0.10</code> if average step reward ≥ 0.80</p>
+            <ul>
+              <li><strong>priority-triage:</strong> score = priority_score (1.0 exact, 0.5 adjacent)</li>
+              <li><strong>full-routing:</strong> score = 0.5×priority + 0.5×category</li>
+              <li><strong>full-pipeline:</strong> score = 0.3×priority + 0.3×category + 0.4×reply_quality</li>
+            </ul>
+
+            <h3>📦 Setup</h3>
+            <pre><code>pip install -r requirements.txt
+uvicorn server.main:app --host 0.0.0.0 --port 8000</code></pre>
+
+            <h3>🐳 Docker</h3>
+            <pre><code>docker build -t email-triage .
+docker run -p 8000:8000 email-triage</code></pre>
+
+            <h3>📈 Baseline Scores</h3>
+            <table class="readme-table">
+              <thead><tr><th>Task</th><th>Model</th><th>Avg Score</th></tr></thead>
+              <tbody>
+                <tr><td>priority-triage</td><td>Qwen2.5-72B-Instruct</td><td>~0.72</td></tr>
+                <tr><td>full-routing</td><td>Qwen2.5-72B-Instruct</td><td>~0.61</td></tr>
+                <tr><td>full-pipeline</td><td>Qwen2.5-72B-Instruct</td><td>~0.47</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
